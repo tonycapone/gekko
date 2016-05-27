@@ -26,7 +26,7 @@ config.watch = {
   key: 'W8RYX4SO-5P6XQWCQ-PPWKDEDV-NMH6LOR8',
   secret: '371352e8e88c9e79763e638e107f8777de1b9583c10d612f1a6ea9873f7f1d6782b136ab35518d924736b4ee88d045b7c0fab01b1d85803da516898f99c9e16d',
   currency: 'BTC',
-  asset: 'ETH'
+  asset: 'LSK'
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,8 +49,8 @@ config.DEMA = {
   // amount of candles to remember and base initial EMAs on
   // the difference between the EMAs (to act as triggers)
   thresholds: {
-    down: -0.0025,
-    up: 0.0025
+    down: -0.025,
+    up: 0.025
   }
 };
 

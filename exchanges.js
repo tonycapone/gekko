@@ -338,7 +338,7 @@ var exchanges = [
     direct: false,
     infinityOrder: false,
     currencies: ['BTC', 'XMR', 'USDT'],
-    assets: ['BTC', 'XMR', 'ETH', 'FCT', 'MAID', 'DASH', 'XVC', 'GRC'],
+    assets: ['BTC', 'XMR', 'ETH', 'FCT', 'MAID', 'DASH', 'XVC', 'GRC', 'LSK'],
     markets: [
       { pair: ['BTC', 'ETH'], minimalOrder: { amount: 0.01, unit: 'asset' } },
       { pair: ['BTC', 'XMR'], minimalOrder: { amount: 0.01, unit: 'asset' } },
@@ -347,6 +347,7 @@ var exchanges = [
       { pair: ['BTC', 'DASH'], minimalOrder: { amount: 0.01, unit: 'asset' } },
       { pair: ['BTC', 'XVC'], minimalOrder: { amount: 0.01, unit: 'asset' } },
       { pair: ['BTC', 'GRC'], minimalOrder: { amount: 0.01, unit: 'asset' } },
+      { pair: ['BTC', 'LSK'], minimalOrder: { amount: 0.01, unit: 'asset' } },
     ],
     requires: ['key', 'secret'],
     providesHistory: 'date',
