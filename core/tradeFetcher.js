@@ -12,6 +12,7 @@
 
 var _ = require('lodash');
 var moment = require('moment');
+var async = require('async');
 var utc = moment.utc;
 var log = require('./log.js');
 
@@ -19,6 +20,7 @@ var util = require('./util');
 var config = util.getConfig();
 
 var exchangeChecker = require('./exchangeChecker');
+var CandleManager = require('./candleManager');
 
 var provider = config.watch.exchange.toLowerCase();
 var DataProvider = require('../exchanges/' + provider);
@@ -33,6 +35,7 @@ var Fetcher = function() {
   this.lastFetch = false;
 
   this.exchange = exchangeChecker.settings(config.watch);
+  this.historicalStart = this.exchange.providesHistory;
 
   this.pair = [
     config.watch.asset,
@@ -45,18 +48,16 @@ var Fetcher = function() {
     this.pair
   );
 
-  if(!this.exchange.providesHistory) {
-    this.on('new trades', function(a) {
-      log.debug(
-        'Fetched',
-        _.size(a.all),
-        'new trades, from',
-        a.start.format('YYYY-MM-DD HH:mm:ss UTC'),
-        'to',
-        a.end.format('YYYY-MM-DD HH:mm:ss UTC')
-      );
-    });  
-  }
+  this.on('new trades', function(a) {
+    log.debug(
+      'Fetched',
+      _.size(a.all),
+      'new trades, from',
+      a.start.format('YYYY-MM-DD HH:mm:ss UTC'),
+      'to',
+      a.end.format('YYYY-MM-DD HH:mm:ss UTC')
+    );
+  });  
 }
 
 var Util = require('util');
@@ -64,15 +65,17 @@ var EventEmitter = require('events').EventEmitter;
 Util.inherits(Fetcher, EventEmitter);
 
 Fetcher.prototype.start = function() {
-  // if this exchange does not support historical trades
-  // start fetching.
-  if(!this.exchange.providesHistory)
+  
+
+  // if this exchange support historical trades
+  // start fetching the data needed for history.
+  var missing = GLOBAL.emitters.market.model.history.toFetch;
+  if (this.historicalStart && missing > 0) {
+    var since = (config.tradingAdvisor.candleSize * (config.tradingAdvisor.historySize + 1));
+    this.fetchHistorical(moment().subtract(since, 'minutes'));
+  } else {
     this.fetch(false);
-  else
-    console.log(
-      'either start looping right away (`since`)',
-      'or first determine starting point dynamically'
-    );
+  }
 }
 
 // Set the first & last trade date and set the
@@ -155,6 +158,12 @@ Fetcher.prototype.fetch = function(since) {
   // this.spoofTrades();
 }
 
+Fetcher.prototype.fetchHistorical = function(since) {
+  log.debug('Historical', this.pair ,'trade data from', this.exchange.name, '...');
+  this.watcher.getTrades(since, this.processTradesHistory, false);
+  // this.spoofTrades();
+}
+
 Fetcher.prototype.spoofTrades = function() {
   var fs = require('fs');
   trades = JSON.parse( fs.readFileSync('./a3.json', 'utf8') );
@@ -185,8 +194,7 @@ Fetcher.prototype.processTrades = function(err, trades) {
   this.calculateNextFetch();
 
   // schedule next fetch
-  if(!this.exchange.providesHistory)
-    this.scheduleNextFetch();
+  this.scheduleNextFetch();
 
   this.emit('new trades', {
     timespan: this.fetchTimespan,
@@ -197,6 +205,93 @@ Fetcher.prototype.processTrades = function(err, trades) {
     all: trades,
     nextIn: this.fetchAfter
   });
+}
+
+
+Fetcher.prototype.processTradesHistory = function(err, trades) {
+  if(err)
+    throw err;
+
+  this.setFetchMeta(trades);
+
+  log.debug(
+    'Fetched',
+    _.size(trades),
+    'historical trades, from',
+    this.first.format('YYYY-MM-DD HH:mm:ss UTC'),
+    'to',
+    this.last.format('YYYY-MM-DD HH:mm:ss UTC')
+  );
+
+  // split trades into unique days
+  var tradeDays = [[]],
+      start = this.first.startOf('day').format('X'),
+      end = this.first.endOf('day').format('X');
+  _.each(trades, function(trade) {
+    // trade has a new day
+    if (!(start <= trade.date && trade.date <= end)) {
+      // get first trade into this block
+      // so system reconize two-day batch
+      _.last(tradeDays).push(trade);
+
+      // start new trade day
+      tradeDays.push([]);
+      var newdate = moment.unix(trade.date).utc();
+      start = newdate.startOf('day').format('X');
+      end = newdate.endOf('day').format('X');
+    }
+
+    _.last(tradeDays).push(trade);
+  });
+
+  // process each trade day
+  async.eachSeries(tradeDays,
+    _.bind(function(trades, next) {
+      this.setFetchMeta(trades);
+
+      var fetch = {
+        timespan: this.fetchTimespan,
+        start: this.first,
+        first: this.firstTrade,
+        end: this.last,
+        last: this.lastTrade,
+        all: trades,
+        nextIn: this.fetchAfter
+      };
+
+      console.log();
+      log.debug('Processing historical',
+        this.first.format('YYYY-MM-DD'),
+        'trades', trades.length
+      );
+
+      // candle processing
+      model = new CandleManager;
+
+      // loop day after finished processing trades
+      model.on('processed', next);
+
+      model.on('history state', function() {
+        // process the trades in this day
+        model.processTrades(fetch);
+      });
+
+      // prepare the model for processing
+      model.setDay(fetch.start);
+
+      // load current history for the day
+      model.checkHistory();
+
+    }, this),
+    _.bind(function() {
+      console.log();
+      // restart market manager
+      this.historicalStart = false;
+      GLOBAL.emitters.market.watching = false;
+      GLOBAL.emitters.market.start();
+    }, this)
+  );
+
 }
 
 

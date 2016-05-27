@@ -88,7 +88,7 @@ if(invalid)
   util.die(invalid);
 
 var plugins = [];
-var emitters = {};
+var emitters = GLOBAL.emitters = {};
 
 var setupMarket = function(next) {
   var Market = require(coreDir + 'marketManager');
