@@ -13,7 +13,7 @@ config.history = {
   // and load historical data from?
   directory: './history/'
 }
-config.debug = true; // for additional logging / debugging
+config.debug = false; // for additional logging / debugging
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //                         WATCHING A MARKET
@@ -234,7 +234,7 @@ config.redisBeacon = {
 config.pushbullet = {
   enabled: true,
   sendMailOnStart: true,
-  deviceId: 'ujwqQQYDkwmsjAiVsKnSTs', // your Pushbullet device ID, sends to all devices if empty
+  deviceId: 'ujwqQQYDkwmsjz7O3P0Jl6', // your Pushbullet device ID, sends to all devices if empty
   authToken: 'o.Wlp06Qp9rA35DzGXDsaTfKxr3qymaL4Z' // your Pushbullet auth token
 }
 
