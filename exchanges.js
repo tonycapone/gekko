@@ -348,6 +348,7 @@ var exchanges = [
       { pair: ['BTC', 'XVC'], minimalOrder: { amount: 0.01, unit: 'asset' } },
       { pair: ['BTC', 'GRC'], minimalOrder: { amount: 0.01, unit: 'asset' } },
       { pair: ['BTC', 'LSK'], minimalOrder: { amount: 0.01, unit: 'asset' } },
+      { pair: ['USDT', 'BTC'], minimalOrder: { amount: 0.01, unit: 'asset' } },
     ],
     requires: ['key', 'secret'],
     providesHistory: 'date',
